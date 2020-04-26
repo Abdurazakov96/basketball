@@ -10,24 +10,28 @@ import ARKit
 
 class ViewController: UIViewController, SCNPhysicsContactDelegate{
     
+    // MARK: - IBOutlets
+    
     @IBOutlet var sceneView: ARSCNView!
+    
+    // MARK: - Private Properties
     private var score = 0
     private var check = false
     private var scoreW = SCNNode()
-    
-    var isHoopPlaced = false {
+    private var isHoopPlaced = false {
         didSet {
             if isHoopPlaced {
                 guard  let configuration = sceneView.session.configuration as? ARWorldTrackingConfiguration
                     else { return }
                 configuration.planeDetection = []
                 sceneView.session.run(configuration)
-                
             }
+            
         }
         
     }
     
+    // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -37,8 +41,6 @@ class ViewController: UIViewController, SCNPhysicsContactDelegate{
         
         // Show statistics such as fps and timing information
         sceneView.showsStatistics = true
-        
-        
         
         // Set the scene to the view
         
@@ -63,7 +65,9 @@ class ViewController: UIViewController, SCNPhysicsContactDelegate{
         sceneView.session.pause()
     }
     
-    func addHoop(result: ARHitTestResult) {
+    // MARK: - Private Methods
+    
+    private func addHoop(result: ARHitTestResult) {
         
         let hoop = SCNScene(named: "art.scnassets/hoop.scn")!.rootNode.clone()
         hoop.simdTransform = result.worldTransform
@@ -115,10 +119,12 @@ class ViewController: UIViewController, SCNPhysicsContactDelegate{
             if node.name == "wall"  {
                 node.removeFromParentNode()
             }
+            
         }
+        
     }
     
-    func addBall() {
+    private func addBall() {
         
         guard let frame = sceneView.session.currentFrame else {return}
         
@@ -141,27 +147,7 @@ class ViewController: UIViewController, SCNPhysicsContactDelegate{
         sceneView.scene.rootNode.addChildNode(ball)
     }
     
-    func physicsWorld(_ world: SCNPhysicsWorld, didBegin contact: SCNPhysicsContact) {
-        if contact.nodeA.physicsBody?.categoryBitMask == BitMaskCategory.ball && contact.nodeB.physicsBody?.categoryBitMask == BitMaskCategory.planeUp {
-            check = true
-        }
-        
-        if contact.nodeA.physicsBody?.categoryBitMask == BitMaskCategory.ball && contact.nodeB.physicsBody?.categoryBitMask == BitMaskCategory.planeDown && check == true {
-            score += 1
-            check = false
-            scoreW.removeFromParentNode()
-            scoreW.removeAllAnimations()
-            scoreW = CreateScoreBoard(String(score))
-            
-            sceneView.scene.rootNode.addChildNode(scoreW)
-            
-        }
-        
-        
-        
-    }
-    
-    func CreateScoreBoard(_ stringForScore: String) -> SCNNode {
+    private func CreateScoreBoard(_ stringForScore: String) -> SCNNode {
         
         let scoreSCN = SCNText(string: stringForScore, extrusionDepth: 1)
         scoreSCN.firstMaterial?.diffuse.contents = UIColor.red
@@ -174,7 +160,7 @@ class ViewController: UIViewController, SCNPhysicsContactDelegate{
         return(scoreBoard)
     }
     
-    func CreateWall(planeAnchor:ARPlaneAnchor)  -> SCNNode {
+    private func CreateWall(planeAnchor:ARPlaneAnchor)  -> SCNNode {
         
         let extent = planeAnchor.extent
         let width = extent.x
@@ -189,10 +175,28 @@ class ViewController: UIViewController, SCNPhysicsContactDelegate{
         wall.eulerAngles.x = -.pi/2
         
         return wall
+    }
+    
+        // MARK: - Public method
+    
+     func physicsWorld(_ world: SCNPhysicsWorld, didBegin contact: SCNPhysicsContact) {
+        if contact.nodeA.physicsBody?.categoryBitMask == BitMaskCategory.ball && contact.nodeB.physicsBody?.categoryBitMask == BitMaskCategory.planeUp {
+            check = true
+        }
+        
+        if contact.nodeA.physicsBody?.categoryBitMask == BitMaskCategory.ball && contact.nodeB.physicsBody?.categoryBitMask == BitMaskCategory.planeDown && check == true {
+            score += 1
+            check = false
+            scoreW.removeFromParentNode()
+            scoreW.removeAllAnimations()
+            scoreW = CreateScoreBoard(String(score))
+            
+            sceneView.scene.rootNode.addChildNode(scoreW)
+        }
         
     }
     
-    
+    // MARK: - IBAction
     
     @IBAction func screenTapped(_ sender: UITapGestureRecognizer) {
         addBall()
@@ -205,15 +209,23 @@ class ViewController: UIViewController, SCNPhysicsContactDelegate{
                 sceneView.scene.physicsWorld.contactDelegate = self
                 isHoopPlaced = true
             }
+            
         }
         
     }
+    
 }
 
+// MARK: - Extension
+
 extension ViewController: ARSCNViewDelegate {
+    
+    // MARK: - Public method
+    
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         guard let planeAnchor = anchor as? ARPlaneAnchor else {return}
         let wall = CreateWall(planeAnchor: planeAnchor)
         node.addChildNode(wall)
     }
+    
 }
